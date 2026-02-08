@@ -9,13 +9,20 @@ export function renderGeoTiffToCanvas(
   geoTiffData: GeoTiffData,
   colorScale: (value: number) => string
 ): void {
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { alpha: true });
   if (!ctx) {
     throw new Error('Failed to get canvas context');
   }
 
-  const { data, width, height, samplesPerPixel, noData } = geoTiffData;
+  // 画像スムージングを有効化してスムースな境界線を描画
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  const { data, width, height, samplesPerPixel, noData, colorMap } = geoTiffData;
   const isRgb = samplesPerPixel >= 3;
+  const isPalette = samplesPerPixel === 1 && colorMap && colorMap.length > 0;
+
+  console.log('🖼️ Canvas rendering:', { width, height, samplesPerPixel, isRgb, isPalette, dataLength: data.length });
 
   // Canvasのサイズを設定
   canvas.width = width;
@@ -26,6 +33,10 @@ export function renderGeoTiffToCanvas(
 
   // ピクセルごとに色を設定
   const whiteThreshold = 250;
+  let validPixels = 0;
+  let noDataPixels = 0;
+  let zeroValuePixels = 0;
+  let sampleValues: number[] = [];
 
   for (let pixelIndex = 0, dataIndex = 0; pixelIndex < width * height; pixelIndex++, dataIndex += samplesPerPixel) {
     if (isRgb) {
@@ -53,24 +64,76 @@ export function renderGeoTiffToCanvas(
 
     const value = data[dataIndex];
 
+    // 値0のカウント
+    if (value === 0) {
+      zeroValuePixels++;
+    }
+
     // 無効な値は透明にする
-    if (Number.isNaN(value) || (noData !== null && value === noData)) {
+    // パレット形式の場合、値0も透明にする（NoDataとして扱う）
+    if (Number.isNaN(value) || (noData !== null && value === noData) || (isPalette && value === 0)) {
       imageData.data[pixelIndex * 4] = 0;
       imageData.data[pixelIndex * 4 + 1] = 0;
       imageData.data[pixelIndex * 4 + 2] = 0;
       imageData.data[pixelIndex * 4 + 3] = 0; // 透明
+      noDataPixels++;
       continue;
     }
 
-    // 値を色に変換
-    const color = colorScale(value);
-    const rgb = hexToRgb(color);
+    // サンプル値を記録（最初の100個）
+    if (sampleValues.length < 100) {
+      sampleValues.push(value);
+    }
+    validPixels++;
 
-    imageData.data[pixelIndex * 4] = rgb.r;
-    imageData.data[pixelIndex * 4 + 1] = rgb.g;
-    imageData.data[pixelIndex * 4 + 2] = rgb.b;
+    let r: number, g: number, b: number;
+
+    // パレット形式の場合、カラーマップから色を取得
+    if (isPalette && colorMap) {
+      const index = Math.floor(value);
+      const numEntries = colorMap.length / 3;
+
+      if (index >= 0 && index < numEntries) {
+        // TIFFのColorMapは R配列, G配列, B配列の順
+        // 値は16ビット（0-65535）なので、8ビット（0-255）に変換
+        r = Math.round((colorMap[index] / 65535) * 255);
+        g = Math.round((colorMap[numEntries + index] / 65535) * 255);
+        b = Math.round((colorMap[numEntries * 2 + index] / 65535) * 255);
+
+        // 白色（NoDataエリア）を透明にする
+        if (r >= whiteThreshold && g >= whiteThreshold && b >= whiteThreshold) {
+          imageData.data[pixelIndex * 4] = 0;
+          imageData.data[pixelIndex * 4 + 1] = 0;
+          imageData.data[pixelIndex * 4 + 2] = 0;
+          imageData.data[pixelIndex * 4 + 3] = 0;
+          noDataPixels++;
+          continue;
+        }
+      } else {
+        // インデックスが範囲外の場合は透明
+        imageData.data[pixelIndex * 4 + 3] = 0;
+        continue;
+      }
+    } else {
+      // 通常の場合、カラースケールを使用
+      const color = colorScale(value);
+      const rgb = hexToRgb(color);
+      r = rgb.r;
+      g = rgb.g;
+      b = rgb.b;
+    }
+
+    imageData.data[pixelIndex * 4] = r;
+    imageData.data[pixelIndex * 4 + 1] = g;
+    imageData.data[pixelIndex * 4 + 2] = b;
     imageData.data[pixelIndex * 4 + 3] = 255; // 不透明度（0-255）
   }
+
+  console.log('🎨 Valid pixels:', validPixels, '/', width * height);
+  console.log('🎨 NoData pixels:', noDataPixels);
+  console.log('🎨 Zero value pixels:', zeroValuePixels);
+  console.log('🎨 isPalette:', isPalette);
+  console.log('🎨 Sample values (first 100):', sampleValues.slice(0, 20));
 
   // Canvasに描画
   ctx.putImageData(imageData, 0, 0);

@@ -4,6 +4,7 @@ export interface GeoTiffData {
   height: number;
   samplesPerPixel: number;
   noData: number | null;
+  colorMap?: number[] | null; // Optional color palette for indexed color images
   bbox: {
     west: number;
     south: number;

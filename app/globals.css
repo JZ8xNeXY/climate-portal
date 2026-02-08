@@ -27,3 +27,9 @@ body {
 .leaflet-default-icon-path {
   background-image: url('https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png');
 }
+
+/* GeoTIFF overlay rendering - smooth scaling */
+.geotiff-overlay {
+  image-rendering: auto;
+  image-rendering: high-quality;
+}

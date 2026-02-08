@@ -65,6 +65,30 @@ export async function loadGeoTiff(filePath: string): Promise<GeoTiffData> {
     // ラスターデータを読み込み
     const samplesPerPixel = image.getSamplesPerPixel();
     const noData = image.getGDALNoData();
+    console.log('🎨 GeoTIFF samplesPerPixel:', samplesPerPixel);
+    console.log('🎨 Is RGB:', samplesPerPixel >= 3);
+
+    // カラーマップ（パレット）情報を取得
+    let colorMap = null;
+    try {
+      // TIFFタグから直接ColorMapを読み取る（Tag 320）
+      const fileDirectory = image.fileDirectory;
+      console.log('🎨 Photometric Interpretation:', fileDirectory.PhotometricInterpretation);
+      console.log('🎨 File Directory keys:', Object.keys(fileDirectory));
+
+      // ColorMapタグ（320）を確認
+      if (fileDirectory.ColorMap) {
+        colorMap = fileDirectory.ColorMap;
+        console.log('🎨 Color map found: Yes');
+        console.log('🎨 Color map length:', colorMap.length);
+        console.log('🎨 Sample color map:', colorMap.slice(0, 30));
+      } else {
+        console.log('🎨 Color map found: No');
+      }
+    } catch (error) {
+      console.log('🎨 Error reading color map:', error);
+    }
+
     const rasters = await image.readRasters({ interleave: true });
 
     // データ配列を取得（interleave: true で1つの配列になる）
@@ -76,11 +100,21 @@ export async function loadGeoTiff(filePath: string): Promise<GeoTiffData> {
     let bbox: number[] | null = null;
     try {
       bbox = image.getBoundingBox();
+      console.log('🗺️ GeoTIFF bbox:', bbox);
+      console.log('🗺️ Format: [west, south, east, north] =', bbox);
     } catch (error) {
       console.warn('GeoTIFF missing/invalid bbox. Using TOKYO_BOUNDS.', error);
       bbox = null;
     }
     const normalizedBbox = normalizeBBox(bbox);
+    console.log('🗺️ Normalized bbox:', normalizedBbox);
+
+    // データ値の範囲を確認（デバッグ用）
+    if (samplesPerPixel === 1) {
+      const range = getDataRange(data as Float32Array | Uint8Array, samplesPerPixel);
+      console.log('📊 Data range:', range);
+      console.log('📊 NoData value:', noData);
+    }
 
     return {
       data,
@@ -88,6 +122,7 @@ export async function loadGeoTiff(filePath: string): Promise<GeoTiffData> {
       height,
       samplesPerPixel,
       noData: noData ?? null,
+      colorMap: colorMap ? Array.from(colorMap) : null,
       bbox: {
         west: normalizedBbox.west,
         south: normalizedBbox.south,

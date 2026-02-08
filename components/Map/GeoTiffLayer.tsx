@@ -44,6 +44,7 @@ export function GeoTiffLayer({ filePath, indicator }: GeoTiffLayerProps) {
     layerRef.current = L.imageOverlay(imageUrl, bounds, {
       opacity: 1,
       interactive: false,
+      className: 'geotiff-overlay',
     }).addTo(map);
 
     return () => {

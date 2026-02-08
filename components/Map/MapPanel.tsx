@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Box, FormControl, MenuItem, Select } from '@mui/material';
 import { MapContainer, TileLayer, useMap, Circle, CircleMarker, Tooltip } from 'react-leaflet';
 import { GeoTiffLayer } from './GeoTiffLayer';
+import { BoundaryLayer } from './BoundaryLayer';
 import { LeafletFix } from './LeafletFix';
 import { TOKYO_BOUNDS, DEFAULT_CENTER, DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM } from '@/utils/constants';
 import 'leaflet/dist/leaflet.css';
@@ -187,10 +188,11 @@ export function MapPanel({
   resizeSignal,
 }: MapPanelProps) {
   const [isPanelOpen, setIsPanelOpen] = useState(true);
-  // 東京都の境界をLeaflet用に変換
+  // 東京都の境界をLeaflet用に変換（余裕を持たせて±0.5度拡張）
+  const padding = 0.5;
   const maxBounds: [[number, number], [number, number]] = [
-    [TOKYO_BOUNDS.south, TOKYO_BOUNDS.west],
-    [TOKYO_BOUNDS.north, TOKYO_BOUNDS.east],
+    [TOKYO_BOUNDS.south - padding, TOKYO_BOUNDS.west - padding],
+    [TOKYO_BOUNDS.north + padding, TOKYO_BOUNDS.east + padding],
   ];
 
   return (
@@ -369,6 +371,9 @@ export function MapPanel({
 
         {/* GeoTIFFレイヤー */}
         <GeoTiffLayer filePath={tifFilePath} indicator={indicator} />
+
+        {/* 区市町村境界線レイヤー */}
+        <BoundaryLayer />
       </MapContainer>
     </Box>
   );
