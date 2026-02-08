@@ -75,7 +75,9 @@ function MapSync() {
 
     const currentCenter = map.getCenter();
     const currentZoom = map.getZoom();
-    const targetCenter = syncPan ? center : [currentCenter.lat, currentCenter.lng];
+    const targetCenter: [number, number] = syncPan
+      ? center
+      : [currentCenter.lat, currentCenter.lng];
     const targetZoom = syncZoom ? zoom : currentZoom;
 
     const centerChanged =
