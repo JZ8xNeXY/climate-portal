@@ -4,6 +4,7 @@ import { Box } from '@mui/material';
 import dynamic from 'next/dynamic';
 import { useClimateStore } from '@/store/climateStore';
 import { MODELS, PERIODS, SCENARIOS } from '@/utils/constants';
+import type { Period } from '@/types/climate';
 
 // Leafletはクライアントサイドのみなので、SSRを無効化
 const MapPanel = dynamic(() => import('./MapPanel').then((mod) => mod.MapPanel), {
@@ -29,6 +30,7 @@ export function ComparisonView() {
     indicator,
     leftMap,
     rightMap,
+    isComparisonMode,
     setLeftPeriod,
     setLeftScenario,
     setLeftModel,
@@ -36,6 +38,35 @@ export function ComparisonView() {
     setRightScenario,
     setRightModel,
   } = useClimateStore();
+
+  const periodFilePaths: Partial<Record<Period, string>> = {
+    '2010': '/data/ne-tokyo_temperature_map_2010.tif',
+    '2030': '/data/ne-tokyo_temperature_map_2030.tif',
+    '2050': '/data/ne-tokyo_temperature_map_2050.tif',
+    '2090': '/data/ne-tokyo_temperature_map_2090.tif',
+  };
+
+  const resolveFilePath = (period: Period) => {
+    if (period === '2010') return periodFilePaths['2010'];
+    if (period === '2020' || period === '2030') return periodFilePaths['2030'];
+    if (period === '2040' || period === '2050') return periodFilePaths['2050'];
+    if (period === '2060' || period === '2070' || period === '2080' || period === '2090') {
+      return periodFilePaths['2090'];
+    }
+    return periodFilePaths['2050'];
+  };
+
+  const leftFilePath =
+    resolveFilePath(leftMap.period) ?? '/data/ne-tokyo_temperature_map_2010.tif';
+  const rightFilePath =
+    resolveFilePath(rightMap.period) ?? '/data/ne-tokyo_temperature_map_2050.tif';
+
+  const leftPeriods = PERIODS;
+  const rightPeriods = PERIODS.filter((item) => item.value !== '2010');
+
+  const leftFlex = isComparisonMode ? '0 0 50%' : '1 1 100%';
+  const rightFlex = '0 0 50%';
+  const resizeSignal = isComparisonMode ? 1 : 0;
 
   return (
     <Box
@@ -47,50 +78,58 @@ export function ComparisonView() {
       }}
     >
       {/* 左マップ */}
-      <MapPanel
-        tifFilePath="/data/ne-tokyo_temperature_map_2010.tif"
-        indicator={indicator}
-        label="2010"
-        panelTitle="左マップ設定"
-        periodValue={leftMap.period}
-        scenarioValue={leftMap.scenario}
-        modelValue={leftMap.model}
-        periods={PERIODS}
-        scenarios={SCENARIOS}
-        models={MODELS}
-        onPeriodChange={setLeftPeriod}
-        onScenarioChange={setLeftScenario}
-        onModelChange={setLeftModel}
-        periodLocked={true}
-        scenarioLocked={true}
-        modelLocked={true}
-      />
-
-      {/* 分割線 */}
-      <Box
-        sx={{
-          width: '2px',
-          background: '#333',
-          cursor: 'col-resize',
-        }}
-      />
+      <Box sx={{ flex: leftFlex, minWidth: 0 }}>
+        <MapPanel
+          tifFilePath={leftFilePath}
+          indicator={indicator}
+          label={leftMap.period}
+          panelTitle="左マップ設定"
+          periodValue={leftMap.period}
+          scenarioValue={leftMap.scenario}
+          modelValue={leftMap.model}
+          periods={leftPeriods}
+          scenarios={SCENARIOS}
+          models={MODELS}
+          onPeriodChange={setLeftPeriod}
+          onScenarioChange={setLeftScenario}
+          onModelChange={setLeftModel}
+          periodLocked={false}
+          resizeSignal={resizeSignal}
+        />
+      </Box>
 
       {/* 右マップ */}
-      <MapPanel
-        tifFilePath="/data/ne-tokyo_temperature_map_2050.tif"
-        indicator={indicator}
-        label="2050"
-        panelTitle="右マップ設定"
-        periodValue={rightMap.period}
-        scenarioValue={rightMap.scenario}
-        modelValue={rightMap.model}
-        periods={PERIODS}
-        scenarios={SCENARIOS}
-        models={MODELS}
-        onPeriodChange={setRightPeriod}
-        onScenarioChange={setRightScenario}
-        onModelChange={setRightModel}
-      />
+      {isComparisonMode && (
+        <>
+          {/* 分割線 */}
+          <Box
+            sx={{
+              width: '2px',
+              background: '#333',
+              cursor: 'col-resize',
+              flex: '0 0 2px',
+            }}
+          />
+          <Box sx={{ flex: rightFlex, minWidth: 0 }}>
+            <MapPanel
+              tifFilePath={rightFilePath}
+              indicator={indicator}
+              label={rightMap.period}
+              panelTitle="右マップ設定"
+              periodValue={rightMap.period}
+              scenarioValue={rightMap.scenario}
+              modelValue={rightMap.model}
+              periods={rightPeriods}
+              scenarios={SCENARIOS}
+              models={MODELS}
+              onPeriodChange={setRightPeriod}
+              onScenarioChange={setRightScenario}
+              onModelChange={setRightModel}
+              resizeSignal={resizeSignal}
+            />
+          </Box>
+        </>
+      )}
     </Box>
   );
 }

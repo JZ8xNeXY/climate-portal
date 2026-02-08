@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Box, FormControl, MenuItem, Select } from '@mui/material';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, Circle, CircleMarker, Tooltip } from 'react-leaflet';
 import { GeoTiffLayer } from './GeoTiffLayer';
 import { LeafletFix } from './LeafletFix';
 import { TOKYO_BOUNDS, DEFAULT_CENTER, DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM } from '@/utils/constants';
 import 'leaflet/dist/leaflet.css';
 import type { Model, Period, Scenario } from '@/types/climate';
+import { useClimateStore } from '@/store/climateStore';
 
 interface MapPanelProps {
   tifFilePath: string;
@@ -26,16 +27,142 @@ interface MapPanelProps {
   periodLocked?: boolean;
   scenarioLocked?: boolean;
   modelLocked?: boolean;
+  resizeSignal: number;
 }
 
-function MapCenterSync({ center, zoom }: { center: [number, number]; zoom: number }) {
+function MapSync() {
   const map = useMap();
+  const isApplyingRef = useRef(false);
+  const hasInitializedRef = useRef(false);
+  const {
+    center,
+    zoom,
+    syncPan,
+    syncZoom,
+    setCenter,
+    setZoom,
+    panToRequest,
+    lastLocation,
+    isLocationLocked,
+  } = useClimateStore();
 
   useEffect(() => {
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
     map.setView(center, zoom, { animate: false });
   }, [map, center, zoom]);
 
+  useEffect(() => {
+    const handleChange = () => {
+      if (isApplyingRef.current) return;
+      if (isLocationLocked) return;
+      const nextCenter = map.getCenter();
+      setCenter([nextCenter.lat, nextCenter.lng]);
+      setZoom(map.getZoom());
+    };
+
+    map.on('move', handleChange);
+    map.on('zoom', handleChange);
+
+    return () => {
+    map.off('move', handleChange);
+    map.off('zoom', handleChange);
+    };
+  }, [map, setCenter, setZoom]);
+
+  useEffect(() => {
+    if (!syncPan && !syncZoom) return;
+
+    const currentCenter = map.getCenter();
+    const currentZoom = map.getZoom();
+    const targetCenter = syncPan ? center : [currentCenter.lat, currentCenter.lng];
+    const targetZoom = syncZoom ? zoom : currentZoom;
+
+    const centerChanged =
+      syncPan &&
+      (Math.abs(currentCenter.lat - targetCenter[0]) > 1e-7 ||
+        Math.abs(currentCenter.lng - targetCenter[1]) > 1e-7);
+    const zoomChanged = syncZoom && currentZoom !== targetZoom;
+
+    if (!centerChanged && !zoomChanged) return;
+
+    isApplyingRef.current = true;
+    map.setView(targetCenter, targetZoom, { animate: true });
+    const timeout = window.setTimeout(() => {
+      isApplyingRef.current = false;
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, [map, center, zoom, syncPan, syncZoom]);
+
+  useEffect(() => {
+    if (!panToRequest) return;
+    isApplyingRef.current = true;
+    map.setView(panToRequest.center, panToRequest.zoom ?? map.getZoom(), { animate: true });
+    const timeout = window.setTimeout(() => {
+      isApplyingRef.current = false;
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, [map, panToRequest]);
+
+  useEffect(() => {
+    if (!isLocationLocked || !lastLocation) return;
+    isApplyingRef.current = true;
+    map.setView([lastLocation.lat, lastLocation.lng], map.getZoom(), { animate: true });
+    const timeout = window.setTimeout(() => {
+      isApplyingRef.current = false;
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [map, isLocationLocked, lastLocation]);
+
   return null;
+}
+
+function MapResizeHandler({ resizeSignal }: { resizeSignal: number }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      map.invalidateSize({ animate: false });
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [map, resizeSignal]);
+
+  return null;
+}
+
+function CurrentLocationMarker() {
+  const { lastLocation, isLocationLocked } = useClimateStore();
+  if (!lastLocation) return null;
+  const center: [number, number] = [lastLocation.lat, lastLocation.lng];
+  const accuracy = Math.max(10, Math.round(lastLocation.accuracy ?? 30));
+  const strokeColor = isLocationLocked ? '#0d47a1' : '#ffffff';
+  const fillColor = isLocationLocked ? '#0d47a1' : '#ffffff';
+  const fillOpacity = isLocationLocked ? 0.9 : 0.7;
+  const ringColor = isLocationLocked ? '#1976d2' : '#cfcfcf';
+  const ringOpacity = isLocationLocked ? 0.15 : 0.08;
+
+  return (
+    <>
+      <Circle
+        center={center}
+        radius={accuracy}
+        pathOptions={{ color: ringColor, weight: 1, fillColor: ringColor, fillOpacity: ringOpacity }}
+      />
+      <CircleMarker
+        center={center}
+        radius={6}
+        pathOptions={{ color: strokeColor, weight: 2, fillColor: fillColor, fillOpacity }}
+      >
+        {isLocationLocked && (
+          <Tooltip direction="top" offset={[0, -6]} opacity={0.9} permanent>
+            現在地
+          </Tooltip>
+        )}
+      </CircleMarker>
+    </>
+  );
 }
 
 export function MapPanel({
@@ -55,6 +182,7 @@ export function MapPanel({
   periodLocked = false,
   scenarioLocked = false,
   modelLocked = false,
+  resizeSignal,
 }: MapPanelProps) {
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   // 東京都の境界をLeaflet用に変換
@@ -227,7 +355,9 @@ export function MapPanel({
       >
         {/* Leafletアイコン修正 */}
         <LeafletFix />
-        <MapCenterSync center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} />
+        <MapSync />
+        <MapResizeHandler resizeSignal={resizeSignal} />
+        <CurrentLocationMarker />
 
         {/* OpenStreetMap ベースマップ */}
         <TileLayer

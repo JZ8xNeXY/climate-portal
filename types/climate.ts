@@ -60,6 +60,9 @@ export interface ClimateMapState {
   // 地図状態
   center: [number, number];
   zoom: number;
+  panToRequest: { id: number; center: [number, number]; zoom?: number } | null;
+  lastLocation: { lat: number; lng: number; accuracy?: number; timestamp?: number } | null;
+  isLocationLocked: boolean;
 
   // アクション
   setIndicator: (indicator: Indicator) => void;
@@ -75,4 +78,7 @@ export interface ClimateMapState {
   toggleSyncPan: () => void;
   setCenter: (center: [number, number]) => void;
   setZoom: (zoom: number) => void;
+  requestPanTo: (center: [number, number], zoom?: number) => void;
+  setLastLocation: (location: { lat: number; lng: number; accuracy?: number; timestamp?: number } | null) => void;
+  setIsLocationLocked: (locked: boolean) => void;
 }

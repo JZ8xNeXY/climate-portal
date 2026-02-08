@@ -98,17 +98,6 @@ export function Legend() {
           <span>{maxLabel}</span>
         </Box>
 
-        {/* データソース情報 */}
-        <Typography
-          sx={{
-            textAlign: 'center',
-            marginTop: 1,
-            fontSize: '10px',
-            color: '#999',
-          }}
-        >
-          共通カラースケール（両期間のデータから算出）
-        </Typography>
       </Box>
     </Box>
   );

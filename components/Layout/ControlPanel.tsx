@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Box,
+  Button,
   Select,
   MenuItem,
   FormControl,
@@ -10,6 +12,7 @@ import {
   ToggleButton,
   Checkbox,
   FormControlLabel,
+  Switch,
   Typography,
 } from '@mui/material';
 import { useClimateStore } from '@/store/climateStore';
@@ -25,7 +28,48 @@ export function ControlPanel() {
     setDisplayMode,
     toggleSyncZoom,
     toggleSyncPan,
+    isComparisonMode,
+    toggleComparisonMode,
+    requestPanTo,
+    zoom,
+    lastLocation,
+    setLastLocation,
+    isLocationLocked,
+    setIsLocationLocked,
   } = useClimateStore();
+  const [isLocating, setIsLocating] = useState(false);
+
+  const handleLocate = () => {
+    if (!('geolocation' in navigator)) {
+      console.warn('Geolocation is not available in this browser.');
+      return;
+    }
+    if (isLocationLocked) {
+      setIsLocationLocked(false);
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setLastLocation({
+          lat: latitude,
+          lng: longitude,
+          accuracy: position.coords.accuracy,
+          timestamp: position.timestamp,
+        });
+        setIsLocationLocked(true);
+        requestPanTo([latitude, longitude], zoom);
+        setIsLocating(false);
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        setIsLocationLocked(false);
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+    );
+  };
 
   return (
     <Box
@@ -105,9 +149,28 @@ export function ControlPanel() {
             </Typography>
           }
         />
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={handleLocate}
+          disabled={isLocating}
+          sx={{ fontSize: '12px', whiteSpace: 'nowrap' }}
+        >
+          {isLocating ? '位置取得中...' : isLocationLocked ? '固定解除' : '現在地へ'}
+        </Button>
+        {lastLocation && isLocationLocked && (
+          <Typography sx={{ fontSize: '11px', color: '#666', whiteSpace: 'nowrap' }}>
+            現在地: {lastLocation.lat.toFixed(5)}, {lastLocation.lng.toFixed(5)}
+          </Typography>
+        )}
       </Box>
 
-      <Box sx={{ marginLeft: 'auto' }} />
+      <Box sx={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Typography sx={{ fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          🖥️ 右マップ表示
+        </Typography>
+        <Switch checked={isComparisonMode} onChange={toggleComparisonMode} />
+      </Box>
     </Box>
   );
 }

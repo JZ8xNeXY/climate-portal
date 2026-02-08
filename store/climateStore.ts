@@ -6,7 +6,7 @@ export const useClimateStore = create<ClimateMapState>((set) => ({
   // 共通設定
   indicator: 'tg_mean_annual',
   displayMode: 'absolute',
-  isComparisonMode: true,
+  isComparisonMode: false,
 
   // 左マップ設定（デフォルト: 基準期間）
   leftMap: {
@@ -29,6 +29,9 @@ export const useClimateStore = create<ClimateMapState>((set) => ({
   // 地図状態
   center: DEFAULT_CENTER,
   zoom: DEFAULT_ZOOM,
+  panToRequest: null,
+  lastLocation: null,
+  isLocationLocked: false,
 
   // アクション
   setIndicator: (indicator) => set({ indicator }),
@@ -63,4 +66,16 @@ export const useClimateStore = create<ClimateMapState>((set) => ({
   toggleSyncPan: () => set((state) => ({ syncPan: !state.syncPan })),
   setCenter: (center) => set({ center }),
   setZoom: (zoom) => set({ zoom }),
+  requestPanTo: (center, zoom) =>
+    set((state) => {
+      const nextZoom = zoom ?? state.zoom;
+      const nextId = (state.panToRequest?.id ?? 0) + 1;
+      return {
+        center,
+        zoom: nextZoom,
+        panToRequest: { id: nextId, center, zoom: nextZoom },
+      };
+    }),
+  setLastLocation: (location) => set({ lastLocation: location }),
+  setIsLocationLocked: (locked) => set({ isLocationLocked: locked }),
 }));
