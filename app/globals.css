@@ -8,6 +8,7 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 body {
@@ -15,4 +16,7 @@ body {
     sans-serif;
 }
 
-/* Leaflet CSS will be imported here when needed */
+/* Fix Leaflet marker icons */
+.leaflet-default-icon-path {
+  background-image: url('https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png');
+}
