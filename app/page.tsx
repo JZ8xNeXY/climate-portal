@@ -5,7 +5,7 @@ import { Legend } from '@/components/Layout/Legend';
 
 export default function Home() {
   return (
-    <main style={{ margin: 0, padding: 0, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <main className="app-shell" style={{ margin: 0, padding: 0 }}>
       <Header />
       <ControlPanel />
       <ComparisonView />

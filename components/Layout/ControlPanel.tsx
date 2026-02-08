@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Box,
   Button,
@@ -38,6 +38,25 @@ export function ControlPanel() {
     setIsLocationLocked,
   } = useClimateStore();
   const [isLocating, setIsLocating] = useState(false);
+  const watchIdRef = useRef<number | null>(null);
+  const watchTimeoutRef = useRef<number | null>(null);
+
+  const clearWatch = () => {
+    if (watchIdRef.current !== null && 'geolocation' in navigator) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    if (watchTimeoutRef.current !== null) {
+      window.clearTimeout(watchTimeoutRef.current);
+      watchTimeoutRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      clearWatch();
+    };
+  }, []);
 
   const handleLocate = () => {
     if (!('geolocation' in navigator)) {
@@ -46,29 +65,45 @@ export function ControlPanel() {
     }
     if (isLocationLocked) {
       setIsLocationLocked(false);
+      clearWatch();
+      setIsLocating(false);
       return;
     }
     setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
+    clearWatch();
+    const accuracyGoal = 50;
+    const maxWaitMs = 15000;
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
-        const { latitude, longitude } = position.coords;
+        const { latitude, longitude, accuracy } = position.coords;
         setLastLocation({
           lat: latitude,
           lng: longitude,
-          accuracy: position.coords.accuracy,
+          accuracy,
           timestamp: position.timestamp,
         });
         setIsLocationLocked(true);
         requestPanTo([latitude, longitude], zoom);
-        setIsLocating(false);
+
+        if (accuracy && accuracy <= accuracyGoal) {
+          clearWatch();
+          setIsLocating(false);
+        }
       },
       (error) => {
         console.error('Geolocation error:', error);
         setIsLocationLocked(false);
+        clearWatch();
         setIsLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+
+    watchTimeoutRef.current = window.setTimeout(() => {
+      clearWatch();
+      setIsLocating(false);
+    }, maxWaitMs);
   };
 
   return (
