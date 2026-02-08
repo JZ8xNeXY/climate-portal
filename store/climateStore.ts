@@ -10,14 +10,16 @@ export const useClimateStore = create<ClimateMapState>((set) => ({
 
   // 左マップ設定（デフォルト: 基準期間）
   leftMap: {
-    period: 'baseline',
+    period: '2010',
     scenario: 'baseline',
+    model: 'baseline',
   },
 
   // 右マップ設定（デフォルト: 世紀末 SSP3-7.0）
   rightMap: {
-    period: '2081-2100',
-    scenario: 'ssp370',
+    period: '2050',
+    scenario: 'ssp585',
+    model: 'ensemble',
   },
 
   // 同期設定
@@ -41,6 +43,10 @@ export const useClimateStore = create<ClimateMapState>((set) => ({
     set((state) => ({
       leftMap: { ...state.leftMap, scenario },
     })),
+  setLeftModel: (model) =>
+    set((state) => ({
+      leftMap: { ...state.leftMap, model },
+    })),
   setRightPeriod: (period) =>
     set((state) => ({
       rightMap: { ...state.rightMap, period },
@@ -48,6 +54,10 @@ export const useClimateStore = create<ClimateMapState>((set) => ({
   setRightScenario: (scenario) =>
     set((state) => ({
       rightMap: { ...state.rightMap, scenario },
+    })),
+  setRightModel: (model) =>
+    set((state) => ({
+      rightMap: { ...state.rightMap, model },
     })),
   toggleSyncZoom: () => set((state) => ({ syncZoom: !state.syncZoom })),
   toggleSyncPan: () => set((state) => ({ syncPan: !state.syncPan })),

@@ -3,6 +3,7 @@
 import { Box } from '@mui/material';
 import dynamic from 'next/dynamic';
 import { useClimateStore } from '@/store/climateStore';
+import { MODELS, PERIODS, SCENARIOS } from '@/utils/constants';
 
 // Leafletはクライアントサイドのみなので、SSRを無効化
 const MapPanel = dynamic(() => import('./MapPanel').then((mod) => mod.MapPanel), {
@@ -24,42 +25,72 @@ const MapPanel = dynamic(() => import('./MapPanel').then((mod) => mod.MapPanel),
 });
 
 export function ComparisonView() {
-  const { indicator, isComparisonMode } = useClimateStore();
+  const {
+    indicator,
+    leftMap,
+    rightMap,
+    setLeftPeriod,
+    setLeftScenario,
+    setLeftModel,
+    setRightPeriod,
+    setRightScenario,
+    setRightModel,
+  } = useClimateStore();
 
   return (
     <Box
       sx={{
         display: 'flex',
-        height: 'calc(100vh - 60px - 70px)', // Header と Legend の高さを引く
+        flex: 1,
+        minHeight: 0,
         width: '100%',
       }}
     >
       {/* 左マップ */}
       <MapPanel
-        position="left"
         tifFilePath="/data/ne-tokyo_temperature_map_2010.tif"
         indicator={indicator}
+        label="2010"
+        panelTitle="左マップ設定"
+        periodValue={leftMap.period}
+        scenarioValue={leftMap.scenario}
+        modelValue={leftMap.model}
+        periods={PERIODS}
+        scenarios={SCENARIOS}
+        models={MODELS}
+        onPeriodChange={setLeftPeriod}
+        onScenarioChange={setLeftScenario}
+        onModelChange={setLeftModel}
+        periodLocked={true}
+        scenarioLocked={true}
+        modelLocked={true}
       />
 
       {/* 分割線 */}
-      {isComparisonMode && (
-        <Box
-          sx={{
-            width: '2px',
-            background: '#333',
-            cursor: 'col-resize',
-          }}
-        />
-      )}
+      <Box
+        sx={{
+          width: '2px',
+          background: '#333',
+          cursor: 'col-resize',
+        }}
+      />
 
-      {/* 右マップ（比較モードONの場合のみ） */}
-      {isComparisonMode && (
-        <MapPanel
-          position="right"
-          tifFilePath="/data/ne-tokyo_temperature_map_2050.tif"
-          indicator={indicator}
-        />
-      )}
+      {/* 右マップ */}
+      <MapPanel
+        tifFilePath="/data/ne-tokyo_temperature_map_2050.tif"
+        indicator={indicator}
+        label="2050"
+        panelTitle="右マップ設定"
+        periodValue={rightMap.period}
+        scenarioValue={rightMap.scenario}
+        modelValue={rightMap.model}
+        periods={PERIODS}
+        scenarios={SCENARIOS}
+        models={MODELS}
+        onPeriodChange={setRightPeriod}
+        onScenarioChange={setRightScenario}
+        onModelChange={setRightModel}
+      />
     </Box>
   );
 }

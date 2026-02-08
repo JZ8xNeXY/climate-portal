@@ -33,8 +33,12 @@ export function useGeoTiff(filePath: string | null) {
 
         if (!cancelled) {
           setData(geoTiffData);
-          const dataRange = getDataRange(geoTiffData.data);
-          setRange(dataRange);
+          if (geoTiffData.samplesPerPixel === 1) {
+            const dataRange = getDataRange(geoTiffData.data, geoTiffData.samplesPerPixel);
+            setRange(dataRange);
+          } else {
+            setRange(null);
+          }
         }
       } catch (err) {
         if (!cancelled) {

@@ -13,13 +13,32 @@ export type Indicator =
 
 export type Scenario = 'baseline' | 'ssp126' | 'ssp245' | 'ssp370' | 'ssp585';
 
-export type Period = 'baseline' | '2021-2040' | '2041-2060' | '2081-2100';
+export type Period =
+  | '2010'
+  | '2020'
+  | '2030'
+  | '2040'
+  | '2050'
+  | '2060'
+  | '2070'
+  | '2080'
+  | '2090';
+
+export type Model =
+  | 'baseline'
+  | 'ensemble'
+  | 'miroc6'
+  | 'mri-esm2-0'
+  | 'mpi-esm1-2-hr'
+  | 'access-cm2'
+  | 'ipsl-cm6a-lr';
 
 export type DisplayMode = 'absolute' | 'change' | 'rate';
 
 export interface MapSettings {
   period: Period;
   scenario: Scenario;
+  model: Model;
 }
 
 export interface ClimateMapState {
@@ -50,6 +69,8 @@ export interface ClimateMapState {
   setLeftScenario: (scenario: Scenario) => void;
   setRightPeriod: (period: Period) => void;
   setRightScenario: (scenario: Scenario) => void;
+  setLeftModel: (model: Model) => void;
+  setRightModel: (model: Model) => void;
   toggleSyncZoom: () => void;
   toggleSyncPan: () => void;
   setCenter: (center: [number, number]) => void;

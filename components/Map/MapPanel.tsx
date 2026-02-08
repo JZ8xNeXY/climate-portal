@@ -1,19 +1,61 @@
 'use client';
 
-import { Box } from '@mui/material';
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { useEffect, useState } from 'react';
+import { Box, FormControl, MenuItem, Select } from '@mui/material';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import { GeoTiffLayer } from './GeoTiffLayer';
 import { LeafletFix } from './LeafletFix';
 import { TOKYO_BOUNDS, DEFAULT_CENTER, DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM } from '@/utils/constants';
 import 'leaflet/dist/leaflet.css';
 
 interface MapPanelProps {
-  position: 'left' | 'right';
   tifFilePath: string;
   indicator: string;
+  label: string;
+  panelTitle: string;
+  periodValue: string;
+  scenarioValue: string;
+  modelValue: string;
+  periods: { value: string; label: string }[];
+  scenarios: { value: string; label: string }[];
+  models: { value: string; label: string }[];
+  onPeriodChange: (value: string) => void;
+  onScenarioChange: (value: string) => void;
+  onModelChange: (value: string) => void;
+  periodLocked?: boolean;
+  scenarioLocked?: boolean;
+  modelLocked?: boolean;
 }
 
-export function MapPanel({ position, tifFilePath, indicator }: MapPanelProps) {
+function MapCenterSync({ center, zoom }: { center: [number, number]; zoom: number }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView(center, zoom, { animate: false });
+  }, [map, center, zoom]);
+
+  return null;
+}
+
+export function MapPanel({
+  tifFilePath,
+  indicator,
+  label,
+  panelTitle,
+  periodValue,
+  scenarioValue,
+  modelValue,
+  periods,
+  scenarios,
+  models,
+  onPeriodChange,
+  onScenarioChange,
+  onModelChange,
+  periodLocked = false,
+  scenarioLocked = false,
+  modelLocked = false,
+}: MapPanelProps) {
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
   // 東京都の境界をLeaflet用に変換
   const maxBounds: [[number, number], [number, number]] = [
     [TOKYO_BOUNDS.south, TOKYO_BOUNDS.west],
@@ -32,6 +74,147 @@ export function MapPanel({ position, tifFilePath, indicator }: MapPanelProps) {
         },
       }}
     >
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 12,
+          left: 12,
+          zIndex: 1000,
+          background: 'rgba(0,0,0,0.65)',
+          color: 'white',
+          padding: '4px 10px',
+          borderRadius: '4px',
+          fontSize: '12px',
+          fontWeight: 600,
+          letterSpacing: '0.2px',
+        }}
+      >
+        {label}
+      </Box>
+      {isPanelOpen ? (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            zIndex: 1000,
+            width: 220,
+            background: 'rgba(255,255,255,0.95)',
+            border: '1px solid #e0e0e0',
+            borderRadius: '6px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            padding: '10px 12px',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ fontSize: '12px', fontWeight: 700 }}>{panelTitle}</Box>
+            <Box
+              component="button"
+              type="button"
+              onClick={() => setIsPanelOpen(false)}
+              aria-label="パネルを閉じる"
+              sx={{
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                fontSize: '14px',
+                lineHeight: 1,
+                color: '#666',
+                padding: 0,
+              }}
+            >
+              ✕
+            </Box>
+          </Box>
+          <Box sx={{ display: 'grid', gap: '8px', marginTop: '8px' }}>
+            <Box>
+              <Box sx={{ fontSize: '11px', color: '#666', fontWeight: 600 }}>
+                📅 期間
+              </Box>
+              <FormControl size="small" fullWidth>
+                <Select
+                  value={periodValue}
+                  onChange={(e) => onPeriodChange(e.target.value as string)}
+                  disabled={periodLocked}
+                  sx={{ fontSize: '12px' }}
+                >
+                  {periods.map((item) => (
+                    <MenuItem key={item.value} value={item.value} sx={{ fontSize: '12px' }}>
+                      {item.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+            <Box>
+              <Box sx={{ fontSize: '11px', color: '#666', fontWeight: 600 }}>
+                🌍 シナリオ
+              </Box>
+              <FormControl size="small" fullWidth>
+                <Select
+                  value={scenarioValue}
+                  onChange={(e) => onScenarioChange(e.target.value as string)}
+                  disabled={scenarioLocked}
+                  sx={{ fontSize: '12px' }}
+                >
+                  {scenarios.map((item) => (
+                    <MenuItem key={item.value} value={item.value} sx={{ fontSize: '12px' }}>
+                      {item.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+            <Box>
+              <Box sx={{ fontSize: '11px', color: '#666', fontWeight: 600 }}>
+                🧪 モデル
+              </Box>
+              <FormControl size="small" fullWidth>
+                <Select
+                  value={modelValue}
+                  onChange={(e) => onModelChange(e.target.value as string)}
+                  disabled={modelLocked}
+                  sx={{ fontSize: '12px' }}
+                >
+                  {models.map((item) => (
+                    <MenuItem key={item.value} value={item.value} sx={{ fontSize: '12px' }}>
+                      {item.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          </Box>
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            zIndex: 1000,
+          }}
+        >
+          <Box
+            component="button"
+            type="button"
+            onClick={() => setIsPanelOpen(true)}
+            aria-label="パネルを開く"
+            sx={{
+              border: '1px solid #e0e0e0',
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '6px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 600,
+              padding: '6px 10px',
+            }}
+          >
+            設定を開く
+          </Box>
+        </Box>
+      )}
       <MapContainer
         center={DEFAULT_CENTER}
         zoom={DEFAULT_ZOOM}
@@ -43,11 +226,12 @@ export function MapPanel({ position, tifFilePath, indicator }: MapPanelProps) {
       >
         {/* Leafletアイコン修正 */}
         <LeafletFix />
+        <MapCenterSync center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} />
 
         {/* OpenStreetMap ベースマップ */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
         {/* GeoTIFFレイヤー */}

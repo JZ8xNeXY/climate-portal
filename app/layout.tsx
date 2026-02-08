@@ -1,10 +1,11 @@
-import type { Metadata } from 'next'
-import './globals.css'
+import type { Metadata } from 'next';
+import { Providers } from './providers';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Tokyo Climate Vision Map',
-  description: '東京都気候変動予測データ視覚化アプリケーション',
-}
+  title: 'Tokyo Climate Portal',
+  description: '東京都の気候変動予測データを可視化するポータル',
+};
 
 export default function RootLayout({
   children,
@@ -13,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
-  )
+  );
 }
