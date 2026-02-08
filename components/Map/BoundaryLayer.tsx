@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { GeoJSON } from 'react-leaflet';
 import type { FeatureCollection } from 'geojson';
-import L from 'leaflet';
+import L, { Layer } from 'leaflet';
 
 interface BoundaryLayerProps {
   show?: boolean;
