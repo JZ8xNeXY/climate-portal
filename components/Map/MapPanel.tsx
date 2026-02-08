@@ -7,21 +7,22 @@ import { GeoTiffLayer } from './GeoTiffLayer';
 import { LeafletFix } from './LeafletFix';
 import { TOKYO_BOUNDS, DEFAULT_CENTER, DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM } from '@/utils/constants';
 import 'leaflet/dist/leaflet.css';
+import type { Model, Period, Scenario } from '@/types/climate';
 
 interface MapPanelProps {
   tifFilePath: string;
   indicator: string;
   label: string;
   panelTitle: string;
-  periodValue: string;
-  scenarioValue: string;
-  modelValue: string;
-  periods: { value: string; label: string }[];
-  scenarios: { value: string; label: string }[];
-  models: { value: string; label: string }[];
-  onPeriodChange: (value: string) => void;
-  onScenarioChange: (value: string) => void;
-  onModelChange: (value: string) => void;
+  periodValue: Period;
+  scenarioValue: Scenario;
+  modelValue: Model;
+  periods: { value: Period; label: string }[];
+  scenarios: { value: Scenario; label: string }[];
+  models: { value: Model; label: string }[];
+  onPeriodChange: (value: Period) => void;
+  onScenarioChange: (value: Scenario) => void;
+  onModelChange: (value: Model) => void;
   periodLocked?: boolean;
   scenarioLocked?: boolean;
   modelLocked?: boolean;
@@ -132,12 +133,12 @@ export function MapPanel({
                 📅 期間
               </Box>
               <FormControl size="small" fullWidth>
-                <Select
-                  value={periodValue}
-                  onChange={(e) => onPeriodChange(e.target.value as string)}
-                  disabled={periodLocked}
-                  sx={{ fontSize: '12px' }}
-                >
+              <Select
+                value={periodValue}
+                onChange={(e) => onPeriodChange(e.target.value as Period)}
+                disabled={periodLocked}
+                sx={{ fontSize: '12px' }}
+              >
                   {periods.map((item) => (
                     <MenuItem key={item.value} value={item.value} sx={{ fontSize: '12px' }}>
                       {item.label}
@@ -151,12 +152,12 @@ export function MapPanel({
                 🌍 シナリオ
               </Box>
               <FormControl size="small" fullWidth>
-                <Select
-                  value={scenarioValue}
-                  onChange={(e) => onScenarioChange(e.target.value as string)}
-                  disabled={scenarioLocked}
-                  sx={{ fontSize: '12px' }}
-                >
+              <Select
+                value={scenarioValue}
+                onChange={(e) => onScenarioChange(e.target.value as Scenario)}
+                disabled={scenarioLocked}
+                sx={{ fontSize: '12px' }}
+              >
                   {scenarios.map((item) => (
                     <MenuItem key={item.value} value={item.value} sx={{ fontSize: '12px' }}>
                       {item.label}
@@ -170,12 +171,12 @@ export function MapPanel({
                 🧪 モデル
               </Box>
               <FormControl size="small" fullWidth>
-                <Select
-                  value={modelValue}
-                  onChange={(e) => onModelChange(e.target.value as string)}
-                  disabled={modelLocked}
-                  sx={{ fontSize: '12px' }}
-                >
+              <Select
+                value={modelValue}
+                onChange={(e) => onModelChange(e.target.value as Model)}
+                disabled={modelLocked}
+                sx={{ fontSize: '12px' }}
+              >
                   {models.map((item) => (
                     <MenuItem key={item.value} value={item.value} sx={{ fontSize: '12px' }}>
                       {item.label}

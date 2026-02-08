@@ -1,3 +1,5 @@
+import type { Model, Period, Scenario } from '@/types/climate';
+
 // 東京都の境界座標
 export const TOKYO_BOUNDS = {
   west: parseFloat(process.env.NEXT_PUBLIC_MAP_MIN_LNG || '138.56250919035112'),
@@ -35,7 +37,7 @@ export const CLIMATE_INDICATORS = [
 ];
 
 // 期間
-export const PERIODS = [
+export const PERIODS: { value: Period; label: string }[] = [
   { value: '2010', label: '基準年度 2010 (2000-2020)' },
   { value: '2020', label: '2020 (2010-2030)' },
   { value: '2030', label: '2030 (2020-2040)' },
@@ -48,7 +50,7 @@ export const PERIODS = [
 ];
 
 // シナリオ
-export const SCENARIOS = [
+export const SCENARIOS: { value: Scenario; label: string }[] = [
   { value: 'baseline', label: '基準期間' },
   { value: 'ssp126', label: 'SSP1-2.6 (1.5℃目標)' },
   { value: 'ssp245', label: 'SSP2-4.5 (中位安定化)' },
@@ -57,7 +59,7 @@ export const SCENARIOS = [
 ];
 
 // モデル
-export const MODELS = [
+export const MODELS: { value: Model; label: string }[] = [
   { value: 'baseline', label: '基準' },
   { value: 'ensemble', label: 'ENSAMBLE' },
   { value: 'miroc6', label: 'MIROC6' },
